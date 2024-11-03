@@ -1,3 +1,3 @@
-module github.com/santinalbrowns/golang-paychangu
+module github.com/santinalbrowns/paychangu
 
 go 1.23.2
