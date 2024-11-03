@@ -32,10 +32,10 @@ To use the SDK, create a new PayChangu client by providing your secret API key.
     client := paychangu.New("your_secret_key")
     ```
 
-3. To initiate a payment, you need to create a PayChanguRequest with the required details, such as Amount, Currency, TxRef, and customer details.
+3. To initiate a payment, you need to create a Request with the required details, such as Amount, Currency, TxRef, and customer details.
 
     ```go
-    request := paychangu.PayChanguRequest{
+    request := paychangu.Request{
         Amount:    10500,
         Currency:  "MWK",
         FirstName: "John",
@@ -117,7 +117,7 @@ import (
 func main() {
     client := paychangu.New("your_secret_key")
 
-    request := paychangu.PayChanguRequest{
+    request := paychangu.Request{
         Amount:    10500,
         Currency:  "MWK",
         FirstName: "John",
