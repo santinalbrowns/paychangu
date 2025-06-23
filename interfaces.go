@@ -376,3 +376,89 @@ type MobileMoneyPayoutErrorResponse struct {
 	Data    interface{}         `json:"data"`    // Can be null
 	Message map[string][]string `json:"message"` // Detailed error messages
 }
+
+// GetMobileMoneyPayoutDetailsResponse is the response structure for fetching mobile money payout details.
+type GetMobileMoneyPayoutDetailsResponse struct {
+	Status  string                   `json:"status"`
+	Message string                   `json:"message"`
+	Data    PayoutTransactionDetails `json:"data"` // Reusing the existing PayoutTransactionDetails struct
+}
+
+// SupportedBank represents a bank supported for payouts.
+type Bank struct {
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
+}
+
+// SupportedBanksResponse is the response structure for fetching supported banks.
+type BanksResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Data    []Bank `json:"data"`
+}
+
+// BankPayoutRequest is the payload for initiating a bank payout.
+type BankPayoutRequest struct {
+	PayoutMethod      string  `json:"payout_method"` // Defaults to "bank_transfer"
+	BankUUID          string  `json:"bank_uuid"`
+	Amount            float64 `json:"amount"` // Use float64 for amount, will be marshaled to string
+	ChargeID          string  `json:"charge_id"`
+	BankAccountName   string  `json:"bank_account_name"`
+	BankAccountNumber string  `json:"bank_account_number"`
+	Email             string  `json:"email,omitempty"`      // Optional
+	FirstName         string  `json:"first_name,omitempty"` // Optional
+	LastName          string  `json:"last_name,omitempty"`  // Optional
+}
+
+// RecipientAccountDetails represents the bank account details of the recipient for a bank payout.
+type RecipientAccountDetails struct {
+	BankUUID      string `json:"bank_uuid"`
+	BankName      string `json:"bank_name"`
+	AccountName   string `json:"account_name"`
+	AccountNumber string `json:"account_number"`
+}
+
+// BankPayoutTransactionDetails represents the detailed transaction information for a bank payout.
+// This structure is similar to PayoutTransactionDetails but includes specific bank recipient details.
+type BankPayoutTransactionDetails struct {
+	ChargeID           string     `json:"charge_id"`
+	RefID              string     `json:"ref_id"`
+	TransID            *string    `json:"trans_id"` // Can be null
+	Currency           string     `json:"currency"`
+	Amount             float64    `json:"amount"`
+	FirstName          *string    `json:"first_name"` // Can be null
+	LastName           *string    `json:"last_name"`  // Can be null
+	Email              *string    `json:"email"`      // Can be null
+	Type               string     `json:"type"`
+	TraceID            *string    `json:"trace_id"` // Can be null
+	Status             string     `json:"status"`
+	Mobile             string     `json:"mobile"` // API returns "0" for bank payouts, but still present
+	Attempts           int        `json:"attempts"`
+	Mode               string     `json:"mode"`
+	CreatedAt          time.Time  `json:"created_at"`
+	CompletedAt        *time.Time `json:"completed_at"` // Can be null
+	EventType          string     `json:"event_type"`
+	TransactionCharges struct {
+		Currency string `json:"currency"`
+		Amount   string `json:"amount"`
+	} `json:"transaction_charges"`
+	RecipientAccountDetails RecipientAccountDetails `json:"recipient_account_details"` // New field for bank payouts
+	// Note: mobile_money field from PayoutTransactionDetails is not present here.
+	// This makes it distinct from MobileMoneyPayoutTransactionDetails.
+}
+
+// BankPayoutResponse is the response for a successful bank payout initialization.
+type BankPayoutResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		Transaction BankPayoutTransactionDetails `json:"transaction"`
+	} `json:"data"`
+}
+
+// GetBankPayoutDetailsResponse is the response structure for fetching bank payout details.
+type GetBankPayoutDetailsResponse struct {
+	Status  string                       `json:"status"`
+	Message string                       `json:"message"`
+	Data    BankPayoutTransactionDetails `json:"data"` // Reusing the existing BankPayoutTransactionDetails struct
+}
