@@ -4,9 +4,12 @@ The **[PayChangu](https://paychangu.readme.io/reference/welcome) Go SDK** is a l
 
 ## Features
 
-- Initiate Payments: Start a payment by specifying the amount, currency, customer details, and more.
-- Verify Payments: Confirm the status of a payment by transaction reference.
-- Customizable Metadata: Add extra information to transactions via the Meta field.
+- **Initiate Payments**: Start a payment by specifying the amount, currency, customer details, and more.
+- **Verify Payments**: Confirm the status of a payment by transaction reference.
+- **Mobile Money Payouts**: Disburse funds directly to mobile money wallets.
+    - Get Supported Mobile Money Operators: Retrieve a list of available mobile money networks.
+    - Initiate Mobile Money Payout: Send funds to a mobile money number.
+- **Customizable Metadata**: Add extra information to transactions via the Meta field.
 
 ## Installation
 
@@ -134,8 +137,76 @@ func main() {
     }
 
     fmt.Printf("Payment Initiated. Checkout URL: %s\n", response.Data.CheckoutURL)
+
+    // Initiate Mobile Money Payout Example 
+    // You'll need a valid mobile number 
+    // and operator ref_id for a real payout.
+    // Using dummy values for example purposes.
+ 
+    payoutRequest := paychangu.MobileMoneyPayoutRequest{
+        Mobile:                    "+265888123456",
+        MobileMoneyOperatorRefID:  "27494cb5-ba9e-437f-a114-4e7a7686bcca",
+        Amount:                    100.00,
+        ChargeID:                  "payout_ref_" + fmt.Sprintf("%d", time.Now().Unix()),
+        Email:                     "recipient@example.com",
+        FirstName:                 "Test",
+        LastName:                  "User",
+    }
+
+    payoutResponse, err := client.InitiateMobileMoneyPayout(payoutRequest)
+    if err != nil {
+        if payoutErr, ok := err.(*paychangu.MobileMoneyPayoutErrorResponse); ok {
+             fmt.Printf("Payout validation errors: %+v\n", payoutErr.Message)
+        }
+    } else {
+        fmt.Printf("Transaction Ref ID: %s\n", payoutResponse.Data.Transaction.RefID)
+        fmt.Printf("Transaction Status: %s\n", payoutResponse.Data.Transaction.Status)
+    }
 }
 ```
+
+## Payouts
+
+### Mobile Money Payout (MOMO)
+
+1. Get Supported Mobile Money Operators
+Before initiating a mobile money payout, you can retrieve a list of supported operators and their details.
+
+    ```go
+    operators, err := client.GetMobileMoneyOperators()
+    if err != nil {
+        log.Fatalf("Error getting mobile money operators: %v", err)
+    }
+
+    fmt.Println("Supported Mobile Money Operators:")
+    for _, op := range operators {
+        fmt.Printf("- %s (Ref ID: %s, Supports Withdrawals: %t)\n", op.Name, op.RefID, op.SupportsWithdrawals)
+    }
+    ```
+
+2. Initiate a Mobile Money Payout
+To send money to a mobile money wallet, you'll need the recipient's mobile number, the operator's ref_id (obtained from GetMobileMoneyOperators), the amount, and a unique charge_id.
+
+    ```go
+    payoutRequest := paychangu.MobileMoneyPayoutRequest{
+        Mobile:                    "+265888123456",
+        MobileMoneyOperatorRefID:  "27494cb5-ba9e-437f-a114-4e7a7686bcca",
+        Amount:                    5000.00,
+        ChargeID:                  "MY_PAYOUT_TX_001",
+        Email:                     "recipient.email@example.com",
+        FirstName:                 "Recipient",
+        LastName:                  "User",
+    }
+
+    payoutResponse, err := client.InitiateMobileMoneyPayou(payoutRequest)
+    if err != nil {
+        log.Fatalf("Error initiating mobile money payout: %v", err)
+    }
+
+    fmt.Printf("Mobile Money Payout initiated successfully!\n")
+    fmt.Printf("Transaction Ref ID: %s\n", payoutResponse.Data.Transaction.RefID)
+    fmt.Printf("Transaction Status: %s\n", payoutResponse.Data.Transaction.Status)
+    ```
 
 ## Error Handling
 

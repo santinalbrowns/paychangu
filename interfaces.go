@@ -288,3 +288,91 @@ type PaymentLog struct {
 	// CreatedAt records the time the log entry was created.
 	CreatedAt time.Time `json:"created_at"`
 }
+
+////////Payout via Mobile Money////////
+
+// MobileMoneyOperator represents a supported mobile money operator.
+type MobileMoneyOperator struct {
+	ID                  int     `json:"id"`
+	Name                string  `json:"name"`
+	RefID               string  `json:"ref_id"`
+	LiveMode            int     `json:"live_mode"`
+	ShortCode           string  `json:"short_code"`
+	Logo                *string `json:"logo"` // Can be null
+	OperatorFee         string  `json:"operator_fee"`
+	PaymentPercentFee   string  `json:"payment_percent_fee"`
+	PaymentFiatFee      *string `json:"payment_fiat_fee"`   // Can be null
+	PayoutPercentFee    *string `json:"payout_percent_fee"` // Can be null
+	PayoutFiatFee       *string `json:"payout_fiat_fee"`    // Can be null
+	SupportsWithdrawals bool    `json:"supports_withdrawals"`
+	SupportedCountry    struct {
+		Name     string `json:"name"`
+		Currency string `json:"currency"`
+	} `json:"supported_country"`
+}
+
+// MobileMoneyOperatorsResponse is the response structure for fetching mobile money operators.
+type MobileMoneyOperatorsResponse struct {
+	Status  string                `json:"status"`
+	Message string                `json:"message"`
+	Data    []MobileMoneyOperator `json:"data"`
+}
+
+// MobileMoneyPayoutRequest is the payload for initiating a mobile money payout.
+type MobileMoneyPayoutRequest struct {
+	Mobile                   string  `json:"mobile"`
+	MobileMoneyOperatorRefID string  `json:"mobile_money_operator_ref_id"`
+	Amount                   float64 `json:"amount"` // Use float64 for amount
+	ChargeID                 string  `json:"charge_id"`
+	Email                    string  `json:"email,omitempty"`              // Optional
+	FirstName                string  `json:"first_name,omitempty"`         // Optional
+	LastName                 string  `json:"last_name,omitempty"`          // Optional
+	TransactionStatus        string  `json:"transaction_status,omitempty"` // Optional, sandbox mode only
+}
+
+// PayoutTransactionDetails represents the details of a payout transaction.
+type PayoutTransactionDetails struct {
+	ChargeID    string    `json:"charge_id"`
+	RefID       string    `json:"ref_id"`
+	TransID     *string   `json:"trans_id"` // Can be null
+	Currency    string    `json:"currency"`
+	Amount      float64   `json:"amount"`
+	FirstName   *string   `json:"first_name"` // Can be null
+	LastName    *string   `json:"last_name"`  // Can be null
+	Email       *string   `json:"email"`      // Can be null
+	Type        string    `json:"type"`
+	TraceID     *string   `json:"trace_id"` // Can be null
+	Status      string    `json:"status"`
+	Mobile      string    `json:"mobile"`
+	Attempts    int       `json:"attempts"`
+	Mode        string    `json:"mode"`
+	CreatedAt   time.Time `json:"created_at"`
+	CompletedAt time.Time `json:"completed_at"`
+	EventType   string    `json:"event_type"`
+	MobileMoney struct {
+		Name    string `json:"name"`
+		RefID   string `json:"ref_id"`
+		Country string `json:"country"`
+	} `json:"mobile_money"`
+	TransactionCharges struct {
+		Currency string `json:"currency"`
+		Amount   string `json:"amount"` // The API returns this as a string, e.g., "1.7"
+	} `json:"transaction_charges"`
+	Customer *interface{} `json:"customer"` // Can be null or an object
+}
+
+// MobileMoneyPayoutResponse is the response for a successful mobile money payout initialization.
+type MobileMoneyPayoutResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		Transaction PayoutTransactionDetails `json:"transaction"`
+	} `json:"data"`
+}
+
+// MobileMoneyPayoutErrorResponse is the response for a failed mobile money payout.
+type MobileMoneyPayoutErrorResponse struct {
+	Status  string              `json:"status"`
+	Data    interface{}         `json:"data"`    // Can be null
+	Message map[string][]string `json:"message"` // Detailed error messages
+}
