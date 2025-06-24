@@ -149,7 +149,7 @@ fmt.Println("Status:", response.Status)
 fmt.Println("Charge ID:", response.Data.Transaction.ChargeID)
 ```
 
-### Field Descriptions
+#### Field Descriptions
 
 | Field                            | Required | Description                       |
 | -------------------------------- | -------- | --------------------------------- |
@@ -227,8 +227,4 @@ if err != nil {
 
 ## Contributing
 
-Open issues or submit pull requests at [GitHub](https://github.com/santinalbrowns/paychangu).
-
-## License
-
-This project is licensed under the MIT License.
+Contributions are welcome! Please open an issue or submit a pull request to improve the SDK
