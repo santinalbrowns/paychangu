@@ -492,7 +492,7 @@ func (p *payChangu) InitiateBankPayout(request BankPayoutRequest) (*BankPayoutRe
 	}{
 		PayoutMethod:      request.PayoutMethod,
 		BankUUID:          request.BankUUID,
-		Amount:            fmt.Sprintf("%.2f", request.Amount), // Format float to string with 2 decimal places
+		Amount:            fmt.Sprintf("%.0f", request.Amount), // Format float to string with 2 decimal places
 		ChargeID:          request.ChargeID,
 		BankAccountName:   request.BankAccountName,
 		BankAccountNumber: request.BankAccountNumber,
