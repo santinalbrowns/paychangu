@@ -9,10 +9,10 @@ import (
 	"net/http"
 )
 
-// The payChangu struct represents a client
+// The PayChangu struct represents a client
 // for the PayChangu API. It holds an API key
 // required for authenticating requests.
-type payChangu struct {
+type PayChangu struct {
 	// secretkey is the secret API secretkey for
 	// authentication with the PayChangu API.
 	secretkey string
@@ -24,8 +24,8 @@ type payChangu struct {
 // secretKey (string): The secret API key used to authenticate with PayChangu.
 //
 // A pointer to a new payChangu instance, configured with the provided API key.
-func New(secretKey string) *payChangu {
-	return &payChangu{secretkey: secretKey}
+func New(secretKey string) *PayChangu {
+	return &PayChangu{secretkey: secretKey}
 }
 
 // The InitiatePayment method sends a payment initiation request to the
@@ -54,7 +54,7 @@ func New(secretKey string) *payChangu {
 //		log.Fatalf("Payment initiation failed: %v", err)
 //	}
 //	fmt.Printf("Payment successful, redirect to: %s\n", resp.Data.CheckoutURL)
-func (p *payChangu) InitiatePayment(request Request) (*Response, error) {
+func (p *PayChangu) InitiatePayment(request Request) (*Response, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (p *payChangu) InitiatePayment(request Request) (*Response, error) {
 //		log.Fatalf("Payment verification failed: %v", err)
 //	}
 //	fmt.Printf("Payment status: %s\n", verifyResp.Data.Status)
-func (p *payChangu) VerifyPayment(txRef string) (*VerifyPaymentResponse, error) {
+func (p *PayChangu) VerifyPayment(txRef string) (*VerifyPaymentResponse, error) {
 	url := fmt.Sprintf("https://api.paychangu.com/verify-payment/%s", txRef)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -179,7 +179,7 @@ func (p *payChangu) VerifyPayment(txRef string) (*VerifyPaymentResponse, error) 
 //	for _, op := range operators {
 //	    fmt.Printf("Operator: %s (Ref ID: %s)\n", op.Name, op.RefID)
 //	}
-func (p *payChangu) GetMobileMoneyOperators() ([]MobileMoneyOperator, error) {
+func (p *PayChangu) GetMobileMoneyOperators() ([]MobileMoneyOperator, error) {
 	req, err := http.NewRequest(http.MethodGet, "https://api.paychangu.com/mobile-money", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -250,7 +250,7 @@ func (p *payChangu) GetMobileMoneyOperators() ([]MobileMoneyOperator, error) {
 //	    log.Fatalf("Mobile money payout failed: %v", err)
 //	}
 //	fmt.Printf("Mobile Money Payout Initiated. Ref ID: %s, Status: %s\n", payoutResp.Data.Transaction.RefID, payoutResp.Data.Transaction.Status)
-func (p *payChangu) InitiateMobileMoneyPayout(request MobileMoneyPayoutRequest) (*MobileMoneyPayoutResponse, error) {
+func (p *PayChangu) InitiateMobileMoneyPayout(request MobileMoneyPayoutRequest) (*MobileMoneyPayoutResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -339,7 +339,7 @@ func (p *payChangu) InitiateMobileMoneyPayout(request MobileMoneyPayoutRequest) 
 //	}
 //	fmt.Printf("Payout Details for Charge ID %s: Status: %s, Amount: %.2f %s\n",
 //	    payoutDetails.ChargeID, payoutDetails.Status, payoutDetails.Amount, payoutDetails.Currency)
-func (p *payChangu) GetMobileMoneyPayoutDetails(chargeID string) (*PayoutTransactionDetails, error) {
+func (p *PayChangu) GetMobileMoneyPayoutDetails(chargeID string) (*PayoutTransactionDetails, error) {
 	url := fmt.Sprintf("https://api.paychangu.com/mobile-money/payments/%sdetails", chargeID)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -403,7 +403,7 @@ func (p *payChangu) GetMobileMoneyPayoutDetails(chargeID string) (*PayoutTransac
 //	for _, bank := range banks {
 //	    fmt.Printf("Bank: %s (UUID: %s)\n", bank.Name, bank.UUID)
 //	}
-func (p *payChangu) GetSupportedBanks(currency string) ([]Bank, error) {
+func (p *PayChangu) GetSupportedBanks(currency string) ([]Bank, error) {
 	url := fmt.Sprintf("https://api.paychangu.com/direct-charge/payouts/supported-banks?currency=%s", currency)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -475,7 +475,7 @@ func (p *payChangu) GetSupportedBanks(currency string) ([]Bank, error) {
 //	}
 //	fmt.Printf("Bank Payout Initiated. Charge ID: %s, Status: %s\n", bankPayoutResp.Data.Transaction.ChargeID, bankPayoutResp.Data.Transaction.Status)
 //	fmt.Printf("Recipient Bank: %s, Account: %s\n", bankPayoutResp.Data.Transaction.RecipientAccountDetails.BankName, bankPayoutResp.Data.Transaction.RecipientAccountDetails.AccountNumber)
-func (p *payChangu) InitiateBankPayout(request BankPayoutRequest) (*BankPayoutResponse, error) {
+func (p *PayChangu) InitiateBankPayout(request BankPayoutRequest) (*BankPayoutResponse, error) {
 	// The API expects amount as a string, so we need to format it before marshaling
 	// We'll create an anonymous struct to handle this, as modifying the original
 	// BankPayoutRequest struct's Amount field to string would be less type-safe for users.
@@ -594,7 +594,7 @@ func (p *payChangu) InitiateBankPayout(request BankPayoutRequest) (*BankPayoutRe
 //	}
 //	fmt.Printf("Bank Payout Details for Charge ID %s: Status: %s, Amount: %.2f %s\n",
 //	    bankPayoutDetails.ChargeID, bankPayoutDetails.Status, bankPayoutDetails.Amount, bankPayoutDetails.Currency)
-func (p *payChangu) GetBankPayoutDetails(chargeID string) (*BankPayoutTransactionDetails, error) {
+func (p *PayChangu) GetBankPayoutDetails(chargeID string) (*BankPayoutTransactionDetails, error) {
 	url := fmt.Sprintf("https://api.paychangu.com/direct-charge/payouts/%s/details", chargeID)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
