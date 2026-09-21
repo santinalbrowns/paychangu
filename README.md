@@ -1,230 +1,154 @@
-# PayChangu Go SDK Documentation
+# PayChangu Go SDK
 
-The **PayChangu Go SDK** provides a robust and seamless integration with the [PayChangu platform](https://paychangu.readme.io/reference/welcome) for Go developers. It simplifies payment collection, transaction verification, and payout processing (mobile money and bank transfers) within Go applications.
+Go client for the [PayChangu](https://developer.paychangu.com) payment APIs: checkout, direct charge, card, payouts, bills, Connect, and US virtual accounts.
 
----
+## Requirements
 
-## Key Features
+- Go 1.23+
+- PayChangu secret key from your [dashboard](https://developer.paychangu.com)
 
-- **Payment Collection**: Accept payments via mobile money or card.
-- **Transaction Verification**: Confirm payment status with ease.
-- **Mobile Money Payouts**: Disburse funds to mobile wallets.
-- **Bank Payouts**: Transfer funds to bank accounts.
-- **Operator & Bank Lookup**: Retrieve supported mobile money operators and banks.
-- **Custom Metadata**: Attach transaction-specific metadata.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Go 1.16 or later
-- PayChangu account and secret key (available from your [PayChangu dashboard](https://paychangu.readme.io))
-
-### Installation
-
-Install the SDK using:
+## Install
 
 ```bash
-go get github.com/santinalbrowns/paychangu
+go get github.com/mzati-paychangu/paychangu_go_sdk
 ```
-
-### Import the Package
 
 ```go
-import "github.com/santinalbrowns/paychangu"
+import "github.com/mzati-paychangu/paychangu_go_sdk"
 ```
 
-### Initialize the Client
-
-You need your **PayChangu secret key**.
+## Client
 
 ```go
 client := paychangu.New("your_secret_key")
 ```
 
-## Accepting Payments
+Optional: `paychangu.WithHTTPClient(...)`, `paychangu.WithBaseURL(...)`.
 
-### Prepare Payment Request
+## Features
+
+- Standard checkout (`InitiatePayment`, `VerifyPayment`)
+- Wallet balance (`GetBalance`)
+- Direct charge: mobile money, bank transfer, verify/details
+- Card charge, verify, refund
+- Mobile money & bank payouts (including list bank payouts)
+- Billers, validate/pay bill, airtime, bill stats
+- PayChangu Connect (authorize link, user, revoke)
+- US virtual accounts (customers + account lifecycle)
+
+## Standard checkout
 
 ```go
-request := paychangu.Request{
-    Amount:    10500,
-    Currency:  "MWK",
-    FirstName: "John",
-    LastName:  "Doe",
-    Email:     "john@example.com",
+resp, err := client.InitiatePayment(paychangu.Request{
+    Amount: 10500, Currency: "MWK", FirstName: "John", LastName: "Doe",
+    Email: "john@example.com",
     CallbackURL: "https://yourapp.com/success",
     ReturnURL:   "https://yourapp.com/failure",
     TxRef:       "TX-123456",
-    Customization: struct {
-        Title       string `json:"title"`
-        Description string `json:"description"`
-    }{
-        Title:       "Order Payment",
-        Description: "Payment for electronics",
-    },
-    Meta: struct {
-        UUID     string `json:"uuid"`
-        Response string `json:"response"`
-    }{
-        UUID:     "user-001",
-        Response: "tracking-data",
-    },
-}
-```
+})
+checkoutURL := resp.Data.CheckoutURL
 
-### Initiate the Payment
-
-```go
-response, err := client.InitiatePayment(request)
-if err != nil {
-    log.Fatalf("Payment initiation failed: %v", err)
-}
-fmt.Println("Checkout URL:", response.Data.CheckoutURL)
-```
-
-### Field Descriptions
-
-| Field                       | Required | Description                           |
-| --------------------------- | -------- | ------------------------------------- |
-| `Amount`                    | Yes      | Amount to charge in selected currency |
-| `Currency`                  | Yes      | Currency code (e.g., "MWK", "USD")    |
-| `FirstName`                 | Yes      | Customer’s first name                 |
-| `LastName`                  | No       | Customer’s last name                  |
-| `Email`                     | No       | Customer’s email                      |
-| `CallbackURL`               | Yes      | Redirect URL after success            |
-| `ReturnURL`                 | Yes      | Redirect URL after failure/cancel     |
-| `TxRef`                     | Yes      | Unique transaction reference          |
-| `Customization.title`       | Yes      | Title on checkout screen              |
-| `Customization.description` | Yes      | Description on checkout screen        |
-| `Meta`                      | No       | Extra metadata (e.g., user ID)        |
-
-## Verifying a Payment
-
-Use this step to confirm if a payment was successful.
-
-```go
 verification, err := client.VerifyPayment("TX-123456")
-if err != nil {
-    log.Fatalf("Verification failed: %v", err)
-}
-fmt.Println("Payment Status:", verification.Data.Status)
 ```
 
-## Mobile Money Payouts
+## Direct charge (mobile money)
 
-### Step 1: Fetch Mobile Money Operators
+```go
+charge, err := client.ChargeMobileMoney(paychangu.ChargeMobileMoneyRequest{
+    Mobile: "265888123456",
+    MobileMoneyOperatorRefID: "20be6c20-adeb-4b5b-a7ba-0769820df4fb",
+    Amount: "1000",
+    ChargeID: "CHARGE-001",
+})
+status, err := client.VerifyDirectCharge("CHARGE-001")
+details, err := client.GetChargeDetails("CHARGE-001")
+```
+
+## Bank transfer collection
+
+```go
+transfer, err := client.InitiateBankTransfer(paychangu.BankTransferRequest{
+    Amount: "1000", Currency: "MWK", ChargeID: "PTC-001",
+})
+account := transfer.Data.PaymentAccountDetails
+tx, err := client.GetBankTransferDetails("PTC-001")
+```
+
+## Card
+
+```go
+card, err := client.ChargeCard(paychangu.ChargeCardRequest{
+    CardNumber: "4242424242424242", Expiry: "12/30", CVV: "123",
+    CardholderName: "John Doe", Amount: "1000", Currency: "USD",
+    ChargeID: "CARD-001", RedirectURL: "https://yourapp.com/redirect",
+})
+_, err = client.VerifyCardCharge("CARD-001")
+_, err = client.RefundCardCharge("CARD-001")
+```
+
+## Payouts
 
 ```go
 operators, err := client.GetMobileMoneyOperators()
-if err != nil {
-    log.Fatalf("Operator fetch failed: %v", err)
-}
-for _, op := range operators {
-    fmt.Println("Name:", op.Name)
-    fmt.Println("RefID:", op.RefID) // Needed for payouts
-}
-```
+payout, err := client.InitiateMobileMoneyPayout(paychangu.MobileMoneyPayoutRequest{
+    Mobile: "0881234567", Amount: 5000,
+    MobileMoneyOperatorRefID: operators[0].RefID,
+    ChargeID: "PAYOUT-001",
+})
+details, err := client.GetMobileMoneyPayoutDetails("PAYOUT-001")
 
-### Step 2: Initiate Mobile Money Payout
-
-```go
-request := paychangu.MobileMoneyPayoutRequest{
-    Mobile: "0881234567",
-    Amount: 5000,
-    MobileMoneyOperatorRefID: "27494cb5-ba9e-437f-a114-4e7a7686bcca",
-    ChargeID: fmt.Sprintf("PAYOUT-%d", time.Now().UnixNano()),
-    Email: "jane@example.com",
-    FirstName: "Jane",
-    LastName: "Doe",
-}
-
-response, err := client.InitiateMobileMoneyPayout(request)
-if err != nil {
-    panic(err)
-}
-fmt.Println("Status:", response.Status)
-fmt.Println("Charge ID:", response.Data.Transaction.ChargeID)
-```
-
-#### Field Descriptions
-
-| Field                            | Required | Description                       |
-| -------------------------------- | -------- | --------------------------------- |
-| `Mobile`                         | Yes      | Recipient phone number            |
-| `Amount`                         | Yes      | Amount to send                    |
-| `MobileMoneyOperatorRefID`       | Yes      | RefID from operator list          |
-| `ChargeID`                       | Yes      | Unique identifier for this payout |
-| `Email`, `FirstName`, `LastName` | No       | Optional recipient info           |
-| `TransactionStatus`              | No       | For sandbox test statuses         |
-
-### Fetch Payout Details
-
-```go
-details, err := client.GetMobileMoneyPayoutDetails("PAYOUT-123456")
-fmt.Println("Status:", details.Status)
-fmt.Println("Amount:", details.Amount)
-```
-
-## Bank Payouts
-
-### Step 1: Fetch Supported Banks
-
-```go
 banks, err := client.GetSupportedBanks("MWK")
-for _, b := range banks {
-    fmt.Printf("Bank: %s, UUID: %s\n", b.Name, b.UUID)
-}
+bankPayout, err := client.InitiateBankPayout(paychangu.BankPayoutRequest{
+    PayoutMethod: "bank_transfer", BankUUID: banks[0].UUID,
+    Amount: 50000, ChargeID: "BANK-001",
+    BankAccountName: "John Doe", BankAccountNumber: "1000000010",
+})
+bankDetails, err := client.GetBankPayoutDetails("BANK-001")
+all, err := client.ListBankPayouts()
 ```
 
-### Step 2: Initiate Bank Payout
+## Bills
 
 ```go
-bankPayout := paychangu.BankPayoutRequest{
-    PayoutMethod: "bank_transfer",
-    BankUUID: "82310dd1-ec9b-4fe7-a32c-2f262ef08681",
-    Amount: 50000,
-    ChargeID: "BANK_PAYOUT_XYZ789",
-    BankAccountName: "John Doe",
-    BankAccountNumber: "1000000010",
-    Email: "john.doe@example.com",
-}
-
-resp, err := client.InitiateBankPayout(bankPayout)
-fmt.Println("Charge ID:", resp.Data.Transaction.ChargeID)
-fmt.Println("Status:", resp.Data.Transaction.Status)
+billers, err := client.GetBillers()
+_, err = client.ValidateBill(paychangu.ValidateBillRequest{Biller: "escom", Account: "123"})
+_, err = client.PayBill(paychangu.PayBillRequest{Biller: "escom", Account: "123", Amount: "5000"})
+_, err = client.BuyAirtime(paychangu.AirtimeRequest{Phone: "0999123456", Amount: "1000"})
 ```
 
-### Fetch Bank Payout Details
+## Connect
 
 ```go
-bankDetails, err := client.GetBankPayoutDetails("BANK_PAYOUT_XYZ789")
-fmt.Println("Status:", bankDetails.Status)
-fmt.Println("Bank:", bankDetails.RecipientAccountDetails.BankName)
+link, err := client.CreateConnectLink(paychangu.ConnectLinkRequest{
+    ClientID: "your-client-id",
+    RedirectURI: "https://yourapp.com/connect/callback",
+    Mode: "live",
+    Scope: "payments:write payments:read",
+})
+user, err := client.GetConnectUser(accessToken)
+err = client.RevokeAccessToken(accessToken) // uses /connect/revoke
 ```
 
-## Project Structure
-
-```bash
-project/
-├── main.go
-├── go.mod
-└── README.md
-```
-
-## Error Handling
-
-Errors returned include detailed messages for debugging:
+## US virtual accounts
 
 ```go
-_, err := client.InitiatePayment(req)
-if err != nil {
-    fmt.Println("Something went wrong:", err)
-}
+customer, err := client.CreateCustomer(paychangu.VirtualCustomerRequest{
+    Email: "john@example.com", FirstName: "John", LastName: "Doe",
+})
+account, err := client.CreateUSAccount(customer.Data.ID)
+_, err = client.GetUSAccountActivity(customer.Data.ID)
 ```
+
+## Balance
+
+```go
+balance, err := client.GetBalance("MWK")
+```
+
+## Docs
+
+API reference: https://developer.paychangu.com/llms.txt
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request to improve the SDK
+Open an issue or PR against this repository.
