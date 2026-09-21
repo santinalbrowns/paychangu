@@ -1,3 +1,3 @@
-module github.com/mzati-paychangu/paychangu_go_sdk
+module github.com/santinalbrowns/paychangu
 
 go 1.23.2
